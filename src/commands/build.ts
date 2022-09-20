@@ -34,6 +34,12 @@ export const build = (config: config = {}) => {
   // Delete Temp
   fs.rmSync(tempDir, { recursive: true, force: true });
 
+  // Copy Assets
+  const assetsDirectory = path.join(BASE_PATH, "assets");
+  if (fsExtra.existsSync(assetsDirectory)) {
+    const dest = path.join(outDir, "assets");
+    fsExtra.copySync(assetsDirectory, dest, { overwrite: true });
+  }
   console.log("Built Runners");
 };
 
