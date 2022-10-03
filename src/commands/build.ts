@@ -64,7 +64,7 @@ const bundle = (outDir: string, runnerDir: string) => {
     const outPath = path.join(runnersDir, `${folderName}.stt`);
 
     exec(
-      `npx browserify ${targetFile} -o ${outPath} -s STTPackage -x cheerio -x lodash -x he -x fs -x axios`
+      `npx browserify ${targetFile} -o ${outPath} -s STTPackage -x cheerio -x lodash -x he -x fs -x axios -x crypto-js -x moment`
     );
   });
   //
