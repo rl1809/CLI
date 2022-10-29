@@ -1,6 +1,6 @@
 {
   "name": "@suwatte/cli",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "Suwatte Dev Tools",
   "main": "dist/cli.js",
   "scripts": {
@@ -21,7 +21,7 @@
     "daisuke": "dist/cli.js"
   },
   "dependencies": {
-    "@suwatte/emulator": "^1.0.3",
+    "@suwatte/emulator": "^1.0.6",
     "browserify": "^17.0.0",
     "commander": "^9.4.0",
     "fs-extra": "^10.1.0",
