@@ -3,6 +3,8 @@ import * as fs from "fs";
 import * as fsExtra from "fs-extra";
 import emulate from "@suwatte/emulator";
 import { exec } from "shelljs";
+import { createHash } from "crypto";
+import { pick } from "lodash";
 type config = {
   noList?: any;
 };
@@ -72,18 +74,40 @@ const bundle = (outDir: string, runnerDir: string) => {
 
 // Generates Runner List
 const generateList = (runnerDir: string, outDir: string) => {
-  const runners = fs.readdirSync(runnerDir).map((folderName) => {
-    const targetFile = path.join(runnerDir, folderName, "index.js");
-    const targetExists = fs.existsSync(targetFile);
+  const timestamp = Date.now();
 
-    if (!targetExists) {
-      return;
-    }
-    const sttPackage = require(targetFile);
-    const target = sttPackage.Target;
-    const runner = emulate(target);
-    return { ...runner.info, path: folderName, type: runner.type };
-  });
+  const runners = fs
+    .readdirSync(runnerDir)
+    .map((folderName) => {
+      const targetFile = path.join(runnerDir, folderName, "index.js");
+      const targetExists = fs.existsSync(targetFile);
+
+      if (!targetExists) {
+        return;
+      }
+      const sttPackage = require(targetFile);
+      const target = sttPackage.Target;
+      const runner = emulate(target);
+      const info = { ...runner.info, path: folderName, type: runner.type };
+
+      return pick(info, [
+        "path",
+        "type",
+        "id",
+        "name",
+        "version",
+        "minSupportedAppVersion",
+        "website",
+        "supportedLanguages",
+        "primarilyAdultContent",
+      ]);
+    })
+    .map((v) => ({
+      ...v,
+      hash: createHash("sha256")
+        .update(JSON.stringify(v) + timestamp.toString())
+        .digest("hex"),
+    }));
 
   let listName = "Runner List";
   const pathToPkgJS = path.join(process.cwd(), "package.json");
