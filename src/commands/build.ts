@@ -100,6 +100,7 @@ const generateList = (runnerDir: string, outDir: string) => {
         "website",
         "supportedLanguages",
         "primarilyAdultContent",
+        "thumbnail",
       ]);
     })
     .map((v) => ({
