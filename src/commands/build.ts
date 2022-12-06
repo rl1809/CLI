@@ -88,7 +88,7 @@ const generateList = (runnerDir: string, outDir: string) => {
       const sttPackage = require(targetFile);
       const target = sttPackage.Target;
       const runner = emulate(target);
-      const info = { ...runner.info, path: folderName, type: runner.type };
+      const info = { ...runner.info, path: folderName };
 
       return pick(info, [
         "path",
