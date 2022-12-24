@@ -75,7 +75,6 @@ const bundle = (outDir: string, runnerDir: string) => {
 // Generates Runner List
 const generateList = (runnerDir: string, outDir: string) => {
   const timestamp = Date.now();
-
   const runners = fs
     .readdirSync(runnerDir)
     .map((folderName) => {
@@ -88,20 +87,7 @@ const generateList = (runnerDir: string, outDir: string) => {
       const sttPackage = require(targetFile);
       const target = sttPackage.Target;
       const runner = emulate(target);
-      const info = { ...runner.info, path: folderName };
-
-      return pick(info, [
-        "path",
-        "type",
-        "id",
-        "name",
-        "version",
-        "minSupportedAppVersion",
-        "website",
-        "supportedLanguages",
-        "primarilyAdultContent",
-        "thumbnail",
-      ]);
+      return { ...runner.info, path: folderName };
     })
     .map((v) => ({
       ...v,
