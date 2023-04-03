@@ -3,7 +3,6 @@
 import { Command } from "commander";
 import { build } from "./commands/build";
 import { serve } from "./commands/serve";
-import { getVersion } from "./utils/getDaisukeVersion";
 const json = require("../package.json");
 
 const program = new Command();
@@ -32,5 +31,5 @@ program
 //   .description("Generate a Standard Runner or Template Class");
 
 program
-  .version(getVersion(), "-v, --version", "Display the version number")
+  .version(json.version, "-v, --version", "Display the version number")
   .parse(process.argv);
