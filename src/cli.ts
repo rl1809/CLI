@@ -13,7 +13,10 @@ program
   .command("build")
   .alias("b")
   .description("Builds valid runners in project directory")
-  .option("--noList", "Skips generating the runner list.")
+  .option(
+    "--noList",
+    "Skips generating the supporting files for hosting this source list."
+  )
   .action(build);
 
 program
@@ -22,13 +25,6 @@ program
   .description("Builds & Serves a List on the local network")
   .option("-p, --port <string>", "Port server should run on.")
   .action(serve);
-
-// TODO: Generate Command
-// program
-//   .command("generate <schematic> [name]")
-//   .alias("g")
-//   .action(generate)
-//   .description("Generate a Standard Runner or Template Class");
 
 program
   .version(json.version, "-v, --version", "Display the version number")

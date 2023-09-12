@@ -2,15 +2,29 @@ import * as path from "path";
 import * as fs from "fs";
 import * as fsExtra from "fs-extra";
 import emulate from "@suwatte/emulator";
-import { exec } from "shelljs";
 import { createHash } from "crypto";
-import { pick } from "lodash";
+import browserify from "browserify";
+import { stream2buffer } from "../utils/fs";
+import { evaluateEnvironment } from "../utils/evaluateEnvironment";
+import { generateHTML } from "../utils/generateHTML";
+import { compile } from "../utils/compile";
+import chalk from "chalk";
 type config = {
   noList?: any;
 };
 const TEMP_DIR = "__temp__";
 const OUT_DIR = "stt";
-export const build = (config: config = {}) => {
+const EXCLUDED_MODULES = [
+  "cheerio",
+  "lodash",
+  "he",
+  "fs",
+  "axios",
+  "crypto-js",
+  "moment",
+];
+export const build = async (config: config) => {
+  console.info(chalk.yellow.bold("Building..."));
   const BASE_PATH = process.cwd();
 
   const tempDir = path.join(BASE_PATH, TEMP_DIR);
@@ -19,57 +33,110 @@ export const build = (config: config = {}) => {
   fs.rmSync(tempDir, { recursive: true, force: true });
   fs.mkdirSync(tempDir, { recursive: true });
 
-  // Transpile TS
-  exec(`npx tsc --outdir ${TEMP_DIR}`);
-  const runnerDir = path.join(tempDir, "runners");
+  let failed = false;
+  try {
+    await compile(tempDir);
+    const runnerDir = path.join(tempDir, "runners");
 
-  // Clear Out Dir
-  fs.rmSync(outDir, { recursive: true, force: true });
-  fs.mkdirSync(outDir, { recursive: true });
+    // Clear Out Dir & Re-add directories
+    await fs.promises.rm(outDir, { recursive: true, force: true });
+    await fs.promises.mkdir(outDir, { recursive: true });
 
-  // Bundle with browserify
-  bundle(outDir, runnerDir);
+    const outRunnersDir = path.join(outDir, "runners");
+    await fs.promises.mkdir(outRunnersDir, { recursive: true });
 
-  if (!config.noList) {
+    // Bundle with browserify
+    await bundle(outDir, runnerDir);
+
+    if (config.noList) {
+      console.info(chalk.green.bold("Built Runners!"));
+      return;
+    }
     generateList(runnerDir, outDir);
-  }
-  // Delete Temp
-  fs.rmSync(tempDir, { recursive: true, force: true });
 
-  // Copy Assets
-  const assetsDirectory = path.join(BASE_PATH, "assets");
-  if (fsExtra.existsSync(assetsDirectory)) {
-    const dest = path.join(outDir, "assets");
-    fsExtra.copySync(assetsDirectory, dest, { overwrite: true });
+    // Delete Temp
+    fs.promises.rm(tempDir, { recursive: true, force: true });
+
+    // Copy Assets
+    const assetsDirectory = path.join(BASE_PATH, "assets");
+    if (fsExtra.existsSync(assetsDirectory)) {
+      const dest = path.join(outDir, "assets");
+      fsExtra.copy(assetsDirectory, dest, { overwrite: true });
+    }
+
+    // HTML
+    try {
+      await generateHTML();
+      console.info(chalk.green.bold("Built Runners!"));
+    } catch (err: any) {
+      console.error(chalk.red.bold("Failed to prepare HTML"));
+      console.error(chalk.red.bold(`${err.message}`));
+    }
+  } catch (err: any) {
+    console.error(chalk.red.bold("Failed to build runners"));
+    console.error(chalk.red.bold(`${err.message}`));
+    failed = true;
+  } finally {
+    if (fs.existsSync(tempDir)) {
+      fs.rmSync(tempDir, { recursive: true, force: true });
+    }
   }
-  console.log("Built Runners");
+
+  if (failed) {
+    process.exit(-1);
+  }
 };
 
 // Bundle with browserify
-const bundle = (outDir: string, runnerDir: string) => {
-  fs.readdirSync(runnerDir).forEach((folderName) => {
-    const folderDir = path.join(runnerDir, folderName);
-    const isDirectory = fs.statSync(folderDir).isDirectory();
+const bundle = async (outDir: string, runnerDir: string) => {
+  const directory = await fs.promises.readdir(runnerDir);
+  const promises = directory.map((folder) =>
+    bundleRunner(folder, runnerDir, outDir)
+  );
 
-    if (!isDirectory) {
-      return;
-    }
+  await Promise.all(promises);
+};
 
-    const targetFile = path.join(folderDir, "index.js");
-    const targetExists = fs.existsSync(targetFile);
+const bundleRunner = async (
+  subfolder: string,
+  directory: string,
+  outDir: string
+) => {
+  // The Location of the transpiled folder
+  const folderDir = path.join(directory, subfolder);
 
-    if (!targetExists) {
-      return;
-    }
-    const runnersDir = path.join(outDir, "runners");
-    fsExtra.ensureDir(runnersDir);
-    const outPath = path.join(runnersDir, `${folderName}.stt`);
+  // Ensure that the folder is a directory
+  const isDirectory = (await fs.promises.stat(folderDir)).isDirectory();
+  if (!isDirectory) {
+    return;
+  }
 
-    exec(
-      `npx browserify ${targetFile} -o ${outPath} -s STTPackage -x cheerio -x lodash -x he -x fs -x axios -x crypto-js -x moment`
-    );
+  const targetFile = path.join(folderDir, "index.js");
+  const targetExists = await fs.promises.stat(targetFile).then(
+    () => true,
+    () => false
+  );
+
+  if (!targetExists) {
+    return;
+  }
+
+  const outRunnersDir = path.join(outDir, "runners");
+  const outPath = path.join(outRunnersDir, `${subfolder}.stt`);
+
+  // Browserify
+  const b = browserify({
+    entries: [targetFile],
+    standalone: "STTPackage",
   });
-  //
+
+  EXCLUDED_MODULES.forEach((v) => b.exclude(v));
+
+  // Write to file
+  const stream = b.bundle();
+  const buffer = await stream2buffer(stream);
+
+  await fs.promises.writeFile(outPath, buffer);
 };
 
 // Generates Runner List
@@ -87,7 +154,11 @@ const generateList = (runnerDir: string, outDir: string) => {
       const sttPackage = require(targetFile);
       const target = sttPackage.Target;
       const runner = emulate(target);
-      return { ...runner.info, path: folderName };
+      return {
+        ...runner.info,
+        path: folderName,
+        environment: evaluateEnvironment(runner),
+      };
     })
     .map((v) => ({
       ...v,
