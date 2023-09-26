@@ -11,7 +11,7 @@ export const generateHTML = async () => {
   const indexHtml = path.join(OUT_DIR, "index.html");
   const TEMPLATE_DIRECTORY = path.join(path.dirname(__dirname), "/templates");
   const templatePath = path.join(TEMPLATE_DIRECTORY, "template.html");
-  const cssPath = path.join(TEMPLATE_DIRECTORY, "output.css");
+  const cssPath = path.join(TEMPLATE_DIRECTORY, "main.css");
 
   // Load the JSON data and template
   const data: any = JSON.parse(fs.readFileSync(listInfo, "utf8"));
@@ -34,5 +34,5 @@ export const generateHTML = async () => {
 
   // Write the output HTML and copy the CSS to the output directory
   fs.writeFileSync(indexHtml, output);
-  fs.copyFileSync(cssPath, path.join(OUT_DIR, "output.css"));
+  fs.copyFileSync(cssPath, path.join(OUT_DIR, "main.css"));
 };
