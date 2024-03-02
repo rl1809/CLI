@@ -17,6 +17,7 @@ program
     "--noList",
     "Skips generating the supporting files for hosting this source list."
   )
+  .option("-f, --folder <folder>", "Change the output folder")
   .action(build);
 
 program
