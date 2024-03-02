@@ -11,6 +11,7 @@ import { compile } from "../utils/compile";
 import chalk from "chalk";
 type config = {
   noList?: any;
+  folder?: string;
 };
 const TEMP_DIR = "__temp__";
 const OUT_DIR = "stt";
@@ -28,7 +29,7 @@ export const build = async (config: config) => {
   const BASE_PATH = process.cwd();
 
   const tempDir = path.join(BASE_PATH, TEMP_DIR);
-  const outDir = path.join(BASE_PATH, OUT_DIR);
+  const outDir = path.join(BASE_PATH, config.folder ?? OUT_DIR);
   // Clear Temp Directory
   fs.rmSync(tempDir, { recursive: true, force: true });
   fs.mkdirSync(tempDir, { recursive: true });
