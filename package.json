@@ -1,6 +1,6 @@
 {
-  "name": "@suwatte/cli",
-  "version": "2.0.4",
+  "name": "@nhant99/cli",
+  "version": "2.0.5",
   "description": "Suwatte Development Tools",
   "main": "dist/cli.js",
   "scripts": {
@@ -12,9 +12,9 @@
     "suwatte"
   ],
   "author": {
-    "name": "Mantton",
-    "email": "mantton.official@gmail.com",
-    "url": "https://mantton.com"
+    "name": "Nha",
+    "email": "nha@gmail.com",
+    "url": "https://nha.com"
   },
   "license": "MIT",
   "bin": {
@@ -50,6 +50,6 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/Suwatte/CLI.git"
+    "url": "https://github.com/rl1809/CLI.git"
   }
 }
